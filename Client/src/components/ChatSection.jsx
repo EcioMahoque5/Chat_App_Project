@@ -152,10 +152,14 @@ function ChatSection({ userFullName, userName, chatRoom, user_id }) {
             message: message.trim(),
         };
         if (msg.message) {
-            setMessages((prevMessages) => [...prevMessages, msg]);
             setMessage('');
-            socket.emit('message', msg);
-            scrollToBottom();
+            socket.emit('message', msg, (response) => {
+                if (response.success) {
+                    setMessages((prevMessages) => [...prevMessages, msg]);
+                } else {
+                    console.error('Error sending message:', response.error);
+                }
+            });
         }
     };
 
