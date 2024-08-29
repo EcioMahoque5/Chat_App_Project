@@ -1,0 +1,12 @@
+Flask
+Flask-SQLAlchemy
+Flask-Migrate
+python-dotenv
+Flask-SocketIO
+Flask-JWT-Extended
+Flask-WTF
+WTForms
+pymysql
+email-validator 
+cryptography
+
