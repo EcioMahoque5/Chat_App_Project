@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
-import { Container, Row, Col } from 'react-bootstrap';
+import { Container, Row, Col, Button } from 'react-bootstrap';
 import styled from 'styled-components';
 import Message from './Message';
-
 import { BsSendFill } from "react-icons/bs";
 
 const socket = io();
@@ -36,6 +35,7 @@ const Brand = styled(Row)`
   padding: 1.25rem;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
 `;
@@ -58,17 +58,34 @@ const MessageArea = styled.div`
   padding-top: 2.5rem;
 `;
 
+const InputWrapper = styled.div`
+  display: flex;
+  border-top: 1px solid #ddd;
+  background: #f5f5f5;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+`;
+
 const MessageInput = styled.textarea`
   width: 100%;
   border: none;
   padding: 20px;
   font-size: 1rem;
   outline: none;
-  background: #f5f5f5;
-  border-top: 1px solid #ddd;
+  background: inherit;
+  resize: none;
   border-bottom-left-radius: 8px;
-  border-bottom-right-radius: 8px;
-  resize: none;  // Prevents resizing
+`;
+
+const SendButton = styled(Button)`
+  background: inherit;
+  border: none;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  &:hover {
+    background: #C6C6C6;
+  }
 `;
 
 function ChatSection({ userName }) {
@@ -109,10 +126,19 @@ function ChatSection({ userName }) {
         }
     };
 
-    const handleKeyUp = (e) => {
+    const handleKeyDown = (e) => {
         if (e.key === 'Enter') {
-            sendMessage();
+            if (e.altKey) {
+                setMessage((prev) => prev + '\n');
+            } else {
+                e.preventDefault(); // Prevent the default action of Enter key
+                sendMessage();
+            }
         }
+    };
+
+    const handleLogout = () => {
+        navigate('/');
     };
 
     return (
@@ -125,22 +151,28 @@ function ChatSection({ userName }) {
                     <Col>
                         <BrandTitle>TalkSpace</BrandTitle>
                     </Col>
+                    <Col xs="auto">
+                        <Button variant="danger" onClick={handleLogout}>
+                            Logout
+                        </Button>
+                    </Col>
                 </Brand>
                 <MessageArea ref={messageAreaRef}>
                     {messages.map((msg, index) => (
                         <Message key={index} msg={msg} type={msg.user === userName ? 'outgoing' : 'incoming'} />
                     ))}
                 </MessageArea>
-                <Row>
-                    <Col>
-                        <MessageInput
-                            placeholder="Write a message..."
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            onKeyUp={handleKeyUp}
-                        />
-                    </Col>
-                </Row>
+                <InputWrapper>
+                    <MessageInput
+                        placeholder="Write a message..."
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                    />
+                    <SendButton onClick={sendMessage}>
+                        <BsSendFill color='#6E6E6E'/>
+                    </SendButton>
+                </InputWrapper>
             </ChatBox>
         </ChatSectionWrapper>
     );

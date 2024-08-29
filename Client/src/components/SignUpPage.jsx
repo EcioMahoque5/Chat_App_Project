@@ -191,7 +191,7 @@ const SignUpPage = ({ onSignUp }) => {
 
             <div className="w-100 text-center mt-3">
               <p className="mb-0">Already have an account?</p>
-              <StyledA href="/login" className='login'>Login</StyledA>
+              <StyledA href="/">Login</StyledA>
             </div>
           </SignUpForm>
         )}

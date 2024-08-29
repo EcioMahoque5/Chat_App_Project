@@ -88,6 +88,9 @@ const LoginPage = ({ onLogin }) => {
             >
                 {({ handleSubmit, handleChange, handleBlur, values, isSubmitting }) => (
                     <LoginForm onSubmit={handleSubmit}>
+
+                        <h3 className="text-center mb-0">Welcome to TalkSpace</h3>
+                        <p className="text-center mb-1">Enter your details below to proceed</p>
                         <Form.Group as={Row}>
                             <Form.Label column sm="4" className='mb-1' style={{ fontSize: '1.2rem', fontWeight: '500' }}>
                                 Username:
