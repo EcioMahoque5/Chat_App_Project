@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
-from .models import db, User, LoginAttempt
-from .forms import RegistrationForm, LoginForm, UpdateUserForm
-from flask_jwt_extended import jwt_required, create_access_token
+from .models import db, User, LoginAttempt, Message
+from .forms import RegistrationForm, LoginForm
+from flask_jwt_extended import jwt_required, create_access_token, decode_token
 from flask_wtf.csrf import generate_csrf
 
 # Create Blueprint
@@ -43,6 +43,11 @@ def login():
                 "success": True,
                 "message": f"Welcome back {user.first_name} {user.other_names}!",
                 "access_token": access_token,
+                "user": {
+                    "first_name": user.first_name,
+                    "other_names": user.other_names,
+                    "user_id": user.id
+                },
                 "cod": 200
             }
             return jsonify(response), 200
@@ -53,9 +58,9 @@ def login():
         response = {
             "success": False,
             "message": "Invalid credentials",
-            "cod": 401
+            "cod": 200
         }
-        return jsonify(response), 401
+        return jsonify(response), 200
     
     response = {
         "success": False,
@@ -100,6 +105,35 @@ def register():
         "cod": 400
     }
     return jsonify(response), 400
+
+
+@api_bp.route('/messages', methods=['POST'])
+def get_messages():
+    try:
+        data = request.get_json()
+        chat_room = data.get('chat_room') 
+        
+        if not chat_room:
+            return jsonify({
+                "success": False,
+                "message": "Chat room not specified",
+                "cod": 400
+            }), 400
+        
+        messages = Message.query.filter_by(chat_room=chat_room).order_by(Message.timestamp.asc()).all()
+        response = [msg.to_dict() for msg in messages]
+        
+        return jsonify(response), 200
+    
+    except Exception as e:
+        response = {
+            "success": False,
+            "message": "Failed to fetch messages",
+            "error": str(e),
+            "cod": 500
+        }
+        return jsonify(response), 500
+
 
 @api_bp.route('/get_all_users', methods=['GET'])
 @jwt_required()

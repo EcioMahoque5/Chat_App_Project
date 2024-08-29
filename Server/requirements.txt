@@ -9,4 +9,4 @@ WTForms
 pymysql
 email-validator 
 cryptography
-
+flask-cors

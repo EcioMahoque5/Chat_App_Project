@@ -1,8 +1,6 @@
-from flask_sqlalchemy import SQLAlchemy
+from . import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
-
-db = SQLAlchemy()
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -10,8 +8,8 @@ class User(db.Model):
     other_names = db.Column(db.String(150), nullable=False)
     username = db.Column(db.String(150), unique=True, nullable=False)
     password = db.Column(db.String(256), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     messages = db.relationship('Message', backref='user', lazy='dynamic')
 
     def set_password(self, password):
@@ -40,16 +38,27 @@ class User(db.Model):
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    room = db.Column(db.String(64), nullable=False)  # Allow multiple messages in one room
+    chat_room  = db.Column(db.String(150), nullable=False)  # Allow multiple messages in one room
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     content = db.Column(db.Text)
-    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.now)
 
+    
     def __repr__(self):
         return f'<Message {self.room} by {self.user_id}>'
+    
+    def to_dict(self):
+        user = User.query.get_or_404(self.user_id)
+        return{
+            'user_id': self.user_id,
+            'user': f"{user.first_name} {user.other_names}",
+            'content': self.content,
+            'timestamp': self.timestamp.isoformat()
+
+        }
 
 class LoginAttempt(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), nullable=False)
     success = db.Column(db.Boolean, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
