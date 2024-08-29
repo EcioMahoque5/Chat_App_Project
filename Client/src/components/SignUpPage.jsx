@@ -3,7 +3,10 @@ import { Button, Form, Container, Row, Col } from 'react-bootstrap';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { Formik, Field, ErrorMessage } from 'formik';
+import Axios from './AxiosInstance';
+import { toast, Slide, ToastContainer } from 'react-toastify';
 import * as yup from 'yup';
+import 'react-toastify/dist/ReactToastify.css'; // Ensure CSS is imported
 
 const SignUpContainer = styled(Container)`
   min-height: 100vh;
@@ -61,15 +64,65 @@ const validationSchema = yup.object().shape({
 const SignUpPage = ({ onSignUp }) => {
   const navigate = useNavigate();
 
-  const handleSubmit = (values, { setSubmitting }) => {
+  const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     const { firstName, otherNames, username, password } = values;
 
-    // Call onSignUp with the form data
-    onSignUp({ firstName, otherNames, username, password });
+    try {
+      const response = await Axios.post('/create_user', {
+        first_name: firstName,
+        other_names: otherNames,
+        username,
+        password
+      });
 
-    // Navigate to the login page
-    navigate('/login');
-    setSubmitting(false);
+      if (response.data.success) {
+        toast.success(response.data.message, {
+          isLoading: false,
+          autoClose: 3000,
+          hideProgressBar: true,
+          closeOnClick: false,
+          pauseOnHover: false,
+          draggable: false,
+          transition: Slide,
+          progress: undefined,
+          theme: 'colored',
+          closeButton: false,
+          position: 'top-right'
+        });
+        navigate('/');
+      } else {
+        toast.error(response.data.message, {
+          isLoading: false,
+          autoClose: 3000,
+          hideProgressBar: true,
+          closeOnClick: false,
+          pauseOnHover: false,
+          draggable: false,
+          transition: Slide,
+          progress: undefined,
+          theme: 'colored',
+          closeButton: false,
+          position: 'top-right'
+        });
+      }
+    } catch (error) {
+      toast.error('An error occurred during sign up', {
+        isLoading: false,
+        autoClose: 3000,
+        hideProgressBar: true,
+        closeOnClick: false,
+        pauseOnHover: false,
+        draggable: false,
+        transition: Slide,
+        progress: undefined,
+        theme: 'colored',
+        closeButton: false,
+        position: 'top-right'
+      });
+    } finally {
+      setSubmitting(false);
+      resetForm();
+    }
   };
 
   return (
@@ -85,7 +138,7 @@ const SignUpPage = ({ onSignUp }) => {
               <Col sm="6">
                 <Form.Group>
                   <Form.Label className='mb-1' style={{ fontSize: '1.2rem', fontWeight: '500' }}>
-                    First Name:
+                    First Name
                   </Form.Label>
                   <Field
                     type="text"
@@ -105,7 +158,7 @@ const SignUpPage = ({ onSignUp }) => {
               <Col sm="6">
                 <Form.Group>
                   <Form.Label className='mb-1' style={{ fontSize: '1.2rem', fontWeight: '500' }}>
-                    Other Names:
+                    Other Names
                   </Form.Label>
                   <Field
                     type="text"
@@ -125,7 +178,7 @@ const SignUpPage = ({ onSignUp }) => {
             </Row>
             <Form.Group as={Row}>
               <Form.Label column sm="4" className='mt-3 mb-1' style={{ fontSize: '1.2rem', fontWeight: '500' }}>
-                Username:
+                Username
               </Form.Label>
               <Col sm="12">
                 <Field
@@ -145,7 +198,7 @@ const SignUpPage = ({ onSignUp }) => {
             </Form.Group>
             <Form.Group as={Row}>
               <Form.Label column sm="4" className='mt-3 mb-1' style={{ fontSize: '1.2rem', fontWeight: '500' }}>
-                Password:
+                Password
               </Form.Label>
               <Col sm="12">
                 <Field
@@ -165,7 +218,7 @@ const SignUpPage = ({ onSignUp }) => {
             </Form.Group>
             <Form.Group as={Row}>
               <Form.Label column sm="4" className='mt-3 mb-1' style={{ fontSize: '1.2rem', fontWeight: '500' }}>
-                Confirm Password:
+                Confirm Password
               </Form.Label>
               <Col sm="12">
                 <Field
@@ -196,6 +249,7 @@ const SignUpPage = ({ onSignUp }) => {
           </SignUpForm>
         )}
       </Formik>
+      
     </SignUpContainer>
   );
 };

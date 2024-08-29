@@ -16,22 +16,27 @@ const MessageWrapper = styled.div`
 `;
 
 const MessageHeader = styled.h4`
-  position: absolute;
-  top: -20px;
+  position: relative;
+  top: 0;
   left: 0;
-  color: #333;
+  color: #000;
   font-size: 14px;
+  font-weight: 900;
+  margin-bottom: 8px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
 `;
 
 const MessageBody = styled.p`
   margin: 0;
 `;
 
-function Message({ msg, type }) {
+function Message({ user, userName, type, text }) {
   return (
     <MessageWrapper type={type}>
-      <MessageHeader>{msg.user}</MessageHeader>
-      <MessageBody>{msg.message}</MessageBody>
+      <MessageHeader>{userName}</MessageHeader>
+      <MessageBody>{text}</MessageBody>
     </MessageWrapper>
   );
 }

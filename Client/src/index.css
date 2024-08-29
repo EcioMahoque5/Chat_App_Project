@@ -9,7 +9,7 @@ html {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: var(--thm-font-opensans);
+  font-family: var(--thm-font-poppins);
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none;/* Firefox*/
 }

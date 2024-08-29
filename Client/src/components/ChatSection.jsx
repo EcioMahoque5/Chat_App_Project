@@ -5,8 +5,9 @@ import { Container, Row, Col, Button } from 'react-bootstrap';
 import styled from 'styled-components';
 import Message from './Message';
 import { BsSendFill } from "react-icons/bs";
+import Axios from './AxiosInstance';
 
-const socket = io();
+const socket = io('http://localhost:5000');
 
 const ChatSectionWrapper = styled(Container)`
   min-height: 100vh;
@@ -88,28 +89,66 @@ const SendButton = styled(Button)`
   }
 `;
 
-function ChatSection({ userName }) {
+function ChatSection({ userFullName, userName, chatRoom, user_id }) {
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
     const messageAreaRef = useRef(null);
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (!userName) {
+        if (!userFullName) {
             navigate('/');
         }
 
-        socket.on('message', (msg) => {
-            setMessages((prevMessages) => [...prevMessages, msg]);
-            scrollToBottom();
-        });
+        const handleMessage = (msg) => {
+            if (msg && msg.user && msg.message) {
+                setMessages((prevMessages) => [...prevMessages, msg]);
+                scrollToBottom();
+            } else {
+                console.error('Received invalid message:', msg);
+            }
+        };
 
-        return () => socket.off('message');
-    }, [userName, navigate]);
+        socket.on('message', handleMessage);
+
+        return () => {
+            socket.off('message', handleMessage);
+        };
+    }, [userFullName, navigate]);
+
+    useEffect(() => {
+        if (chatRoom) {
+            Axios.post('messages', { chat_room: chatRoom })
+                .then((response) => {
+                    const mappedMessages = response.data.map(msg => ({
+                        userName: msg.user,
+                        message: msg.content || 'No message content',
+                        user_id: msg.user_id,
+                        timestamp: msg.timestamp
+                    }));
+                    setMessages(mappedMessages);
+                    scrollToBottom();
+                })
+                .catch((error) => {
+                    console.error('Error fetching messages:', error);
+                });
+
+            socket.emit('join', { chatRoom });
+        }
+
+        return () => {
+            if (chatRoom) {
+                socket.emit('leave', { chatRoom });
+            }
+        };
+    }, [chatRoom]);
 
     const sendMessage = () => {
         const msg = {
             user: userName,
+            userName: userFullName,
+            chatRoom: chatRoom,
+            user_id: user_id,
             message: message.trim(),
         };
         if (msg.message) {
@@ -146,7 +185,7 @@ function ChatSection({ userName }) {
             <ChatBox>
                 <Brand as={Row}>
                     <Col xs="auto">
-                        <BsSendFill size={35}/>
+                        <BsSendFill size={35} />
                     </Col>
                     <Col>
                         <BrandTitle>TalkSpace</BrandTitle>
@@ -158,19 +197,27 @@ function ChatSection({ userName }) {
                     </Col>
                 </Brand>
                 <MessageArea ref={messageAreaRef}>
-                    {messages.map((msg, index) => (
-                        <Message key={index} msg={msg} type={msg.user === userName ? 'outgoing' : 'incoming'} />
-                    ))}
+                    {messages.map((msg, index) => {
+                        return (
+                            <Message
+                                key={index}
+                                user={msg.user || 'Unknown User'}
+                                text={msg.message || 'No message content'}
+                                userName={msg.userName}
+                                type={msg.user_id === user_id ? 'outgoing' : 'incoming'}
+                            />
+                        )
+                    })}
                 </MessageArea>
                 <InputWrapper>
                     <MessageInput
-                        placeholder="Write a message..."
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                         onKeyDown={handleKeyDown}
+                        placeholder="Type a message"
                     />
                     <SendButton onClick={sendMessage}>
-                        <BsSendFill color='#6E6E6E'/>
+                        <BsSendFill size={20} />
                     </SendButton>
                 </InputWrapper>
             </ChatBox>
