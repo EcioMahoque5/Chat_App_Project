@@ -29,14 +29,20 @@ const MessageHeader = styled.h4`
 `;
 
 const MessageBody = styled.p`
-  margin: 0;
+  margin: 0 0 5px 0;
 `;
 
-function Message({ user, userName, type, text }) {
+const Timestamp = styled.span`
+  font-size: 12px;
+  color: ${({ type }) => (type === 'incoming' ? '#fff' : '#333')};
+`;
+
+function Message({ user, userName, type, text, timestamp}) {
   return (
     <MessageWrapper type={type}>
       <MessageHeader>{userName}</MessageHeader>
       <MessageBody>{text}</MessageBody>
+      {timestamp && <Timestamp type={type}>{timestamp}</Timestamp>}
     </MessageWrapper>
   );
 }

@@ -124,7 +124,7 @@ function ChatSection({ userFullName, userName, chatRoom, user_id }) {
                         userName: msg.user,
                         message: msg.content || 'No message content',
                         user_id: msg.user_id,
-                        timestamp: msg.timestamp
+                        timestamp: msg.timestamp.slice(0, 16).replace('T', '  '), // Format as "YYYY-MM-DD  HH:MM"
                     }));
                     setMessages(mappedMessages);
                     scrollToBottom();
@@ -144,12 +144,16 @@ function ChatSection({ userFullName, userName, chatRoom, user_id }) {
     }, [chatRoom]);
 
     const sendMessage = () => {
+        const now = new Date();
+        const timestamp = now.toISOString().slice(0, 16).replace('T', '  '); // Format as "YYYY-MM-DD  HH:MM"
+
         const msg = {
             user: userName,
             userName: userFullName,
             chatRoom: chatRoom,
             user_id: user_id,
             message: message.trim(),
+            timestamp: timestamp,
         };
         if (msg.message) {
             setMessage('');
@@ -209,6 +213,7 @@ function ChatSection({ userFullName, userName, chatRoom, user_id }) {
                                 text={msg.message || 'No message content'}
                                 userName={msg.userName}
                                 type={msg.user_id === user_id ? 'outgoing' : 'incoming'}
+                                timestamp = {msg.timestamp}
                             />
                         )
                     })}
