@@ -89,7 +89,7 @@ const SendButton = styled(Button)`
   }
 `;
 
-function ChatSection({ userFullName, userName, chatRoom, user_id }) {
+function ChatSection({ userFullName, user, chatRoom, user_id }) {
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
     const messageAreaRef = useRef(null);
@@ -118,10 +118,11 @@ function ChatSection({ userFullName, userName, chatRoom, user_id }) {
 
     useEffect(() => {
         if (chatRoom) {
+            socket.emit('join', { userFullName, chatRoom });
             Axios.post('messages', { chat_room: chatRoom })
                 .then((response) => {
                     const mappedMessages = response.data.map(msg => ({
-                        userName: msg.user,
+                        user: msg.user,
                         message: msg.content || 'No message content',
                         user_id: msg.user_id,
                         timestamp: msg.timestamp.slice(0, 16).replace('T', '  '), // Format as "YYYY-MM-DD  HH:MM"
@@ -133,14 +134,8 @@ function ChatSection({ userFullName, userName, chatRoom, user_id }) {
                     console.error('Error fetching messages:', error);
                 });
 
-            socket.emit('join', { chatRoom });
+            
         }
-
-        return () => {
-            if (chatRoom) {
-                socket.emit('leave', { chatRoom });
-            }
-        };
     }, [chatRoom]);
 
     const sendMessage = () => {
@@ -148,8 +143,8 @@ function ChatSection({ userFullName, userName, chatRoom, user_id }) {
         const timestamp = now.toISOString().slice(0, 16).replace('T', '  '); // Format as "YYYY-MM-DD  HH:MM"
 
         const msg = {
-            user: userName,
-            userName: userFullName,
+            user: user,
+            userFullName: userFullName,
             chatRoom: chatRoom,
             user_id: user_id,
             message: message.trim(),
@@ -185,6 +180,8 @@ function ChatSection({ userFullName, userName, chatRoom, user_id }) {
     };
 
     const handleLogout = () => {
+        socket.emit('leave', { userFullName, chatRoom });
+        sessionStorage.clear();
         navigate('/');
     };
 
@@ -211,7 +208,7 @@ function ChatSection({ userFullName, userName, chatRoom, user_id }) {
                                 key={index}
                                 user={msg.user || 'Unknown User'}
                                 text={msg.message || 'No message content'}
-                                userName={msg.userName}
+                                userFullName={msg.userFullName}
                                 type={msg.user_id === user_id ? 'outgoing' : 'incoming'}
                                 timestamp = {msg.timestamp}
                             />

@@ -5,13 +5,13 @@ import LoginPage from './components/LoginPage';
 import SignUpPage from './components/SignUpPage';
 
 const App = () => {
-  const [userName, setUserName] = useState('');
+  const [user, setUser] = useState('');
   const [userFullName, setUserFullName] = useState('');
   const [chatRoom, setChatRoom] = useState('');
   const [userId, setUserId] = useState(0);
 
   const handleLogin = (username, password, chatRoom, firstName, otherNames, user_id) => {
-    setUserName(username);
+    setUser(username);
     setUserFullName(`${firstName} ${otherNames}`);
     setChatRoom(chatRoom);
     setUserId(user_id);
@@ -22,7 +22,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={<LoginPage onLogin={handleLogin} />} />
         <Route path="/sign-up" element={<SignUpPage />} />
-        <Route path="/chat" element={<ChatSection userFullName={userFullName} userName={userName} chatRoom={chatRoom} user_id={userId}/>} />
+        <Route path="/chat" element={<ChatSection userFullName={userFullName} user={user} chatRoom={chatRoom} user_id={userId}/>} />
       </Routes>
     </Router>
   );
