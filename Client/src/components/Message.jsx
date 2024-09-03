@@ -37,10 +37,10 @@ const Timestamp = styled.span`
   color: ${({ type }) => (type === 'incoming' ? '#fff' : '#333')};
 `;
 
-function Message({ user, userName, type, text, timestamp}) {
+function Message({ user, userFullName, type, text, timestamp}) {
   return (
     <MessageWrapper type={type}>
-      <MessageHeader>{userName}</MessageHeader>
+      <MessageHeader>{userFullName}</MessageHeader>
       <MessageBody>{text}</MessageBody>
       {timestamp && <Timestamp type={type}>{timestamp}</Timestamp>}
     </MessageWrapper>

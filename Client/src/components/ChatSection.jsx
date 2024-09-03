@@ -122,7 +122,7 @@ function ChatSection({ userFullName, user, chatRoom, user_id }) {
             Axios.post('messages', { chat_room: chatRoom })
                 .then((response) => {
                     const mappedMessages = response.data.map(msg => ({
-                        user: msg.user,
+                        userFullName: msg.user,
                         message: msg.content || 'No message content',
                         user_id: msg.user_id,
                         timestamp: msg.timestamp.slice(0, 16).replace('T', '  '), // Format as "YYYY-MM-DD  HH:MM"
@@ -133,8 +133,6 @@ function ChatSection({ userFullName, user, chatRoom, user_id }) {
                 .catch((error) => {
                     console.error('Error fetching messages:', error);
                 });
-
-            
         }
     }, [chatRoom]);
 
@@ -151,11 +149,9 @@ function ChatSection({ userFullName, user, chatRoom, user_id }) {
             timestamp: timestamp,
         };
         if (msg.message) {
-            setMessage('');
+            setMessage('');  // Clear the message input field
             socket.emit('message', msg, (response) => {
-                if (response.success) {
-                    setMessages((prevMessages) => [...prevMessages, msg]);
-                } else {
+                if (!response.success) {
                     console.error('Error sending message:', response.error);
                 }
             });
