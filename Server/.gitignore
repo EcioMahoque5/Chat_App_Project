@@ -3,7 +3,8 @@ __pycache__
 *.pyc
 *.pyo
 *.env
-venv
+venv/
+.env
 
 # MacOS
 .DS_Store
@@ -18,4 +19,4 @@ logs
 
 
 #Migrations
-migrations
+migrations/
