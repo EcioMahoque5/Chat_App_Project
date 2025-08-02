@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Formik, Field, ErrorMessage } from 'formik';
 import Axios from './AxiosInstance';
 import { toast, Slide } from 'react-toastify';
+import { setTokens } from '../utils/helpers';
 import * as yup from 'yup';
 
 const LoginContainer = styled(Container)`
@@ -85,7 +86,7 @@ const LoginPage = ({ onLogin }) => {
                     position: 'top-right'
                 });
 
-                sessionStorage.setItem('access_token', response.data.access_token);
+                setTokens(response.data.access_token);
                 
                 const { first_name, other_names, user_id} = response.data.user;
                 onLogin(username, password, chatRoom, first_name, other_names, user_id);

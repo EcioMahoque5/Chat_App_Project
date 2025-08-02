@@ -1,8 +1,12 @@
 import os
 from dotenv import load_dotenv
 import datetime
+import logging
 
 load_dotenv()
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY")

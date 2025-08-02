@@ -1,13 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import io from 'socket.io-client';
-import { Container, Row, Col, Button } from 'react-bootstrap';
-import styled from 'styled-components';
-import Message from './Message';
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import io from "socket.io-client";
+import { Container, Row, Col, Button } from "react-bootstrap";
+import styled from "styled-components";
+import Message from "./Message";
 import { BsSendFill } from "react-icons/bs";
-import Axios from './AxiosInstance';
-
-const socket = io('http://localhost:5000');
+import Axios from "./AxiosInstance";
+import { logout, getToken } from "../utils/helpers";
 
 const ChatSectionWrapper = styled(Container)`
   min-height: 100vh;
@@ -15,19 +14,50 @@ const ChatSectionWrapper = styled(Container)`
   display: flex;
   align-items: center;
   justify-content: center;
-  background-image: radial-gradient(circle at 15% 55%, hsla(164,0%,78%,0.03) 0%, hsla(164,0%,78%,0.03) 15%,transparent 15%, transparent 100%),
-                    radial-gradient(circle at 89% 23%, hsla(164,0%,78%,0.03) 0%, hsla(164,0%,78%,0.03) 60%,transparent 60%, transparent 100%),
-                    radial-gradient(circle at 58% 94%, hsla(164,0%,78%,0.03) 0%, hsla(164,0%,78%,0.03) 48%,transparent 48%, transparent 100%),
-                    radial-gradient(circle at 54% 93%, hsla(164,0%,78%,0.03) 0%, hsla(164,0%,78%,0.03) 42%,transparent 42%, transparent 100%),
-                    radial-gradient(circle at 53% 32%, hsla(164,0%,78%,0.03) 0%, hsla(164,0%,78%,0.03) 24%,transparent 24%, transparent 100%),
-                    linear-gradient(90deg, rgb(0,0,0),rgb(0,0,0));
+  background-image: radial-gradient(
+      circle at 15% 55%,
+      hsla(164, 0%, 78%, 0.03) 0%,
+      hsla(164, 0%, 78%, 0.03) 15%,
+      transparent 15%,
+      transparent 100%
+    ),
+    radial-gradient(
+      circle at 89% 23%,
+      hsla(164, 0%, 78%, 0.03) 0%,
+      hsla(164, 0%, 78%, 0.03) 60%,
+      transparent 60%,
+      transparent 100%
+    ),
+    radial-gradient(
+      circle at 58% 94%,
+      hsla(164, 0%, 78%, 0.03) 0%,
+      hsla(164, 0%, 78%, 0.03) 48%,
+      transparent 48%,
+      transparent 100%
+    ),
+    radial-gradient(
+      circle at 54% 93%,
+      hsla(164, 0%, 78%, 0.03) 0%,
+      hsla(164, 0%, 78%, 0.03) 42%,
+      transparent 42%,
+      transparent 100%
+    ),
+    radial-gradient(
+      circle at 53% 32%,
+      hsla(164, 0%, 78%, 0.03) 0%,
+      hsla(164, 0%, 78%, 0.03) 24%,
+      transparent 24%,
+      transparent 100%
+    ),
+    linear-gradient(90deg, rgb(0, 0, 0), rgb(0, 0, 0));
 `;
 
 const ChatBox = styled.div`
   width: 51.5rem;
   max-width: 90%;
   background: #ffffff;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
   border-radius: 8px;
 `;
 
@@ -85,146 +115,179 @@ const SendButton = styled(Button)`
   align-items: center;
   padding: 0 20px;
   &:hover {
-    background: #C6C6C6;
+    background: #c6c6c6;
   }
 `;
 
 function ChatSection({ userFullName, user, chatRoom, user_id }) {
-    const [message, setMessage] = useState('');
-    const [messages, setMessages] = useState([]);
-    const messageAreaRef = useRef(null);
-    const navigate = useNavigate();
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState([]);
+  const [socket, setSocket] = useState(null);
+  const messageAreaRef = useRef(null);
+  const navigate = useNavigate();
 
-    useEffect(() => {
-        if (!userFullName) {
-            navigate('/');
-        }
+  // Initialize socket only after token is available
+  useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      logout();
+      navigate("/");
+      return;
+    }
 
-        const handleMessage = (msg) => {
-            if (msg && msg.user && msg.message) {
-                setMessages((prevMessages) => [...prevMessages, msg]);
-                scrollToBottom();
-            } else {
-                console.error('Received invalid message:', msg);
-            }
+    const newSocket = io(import.meta.env.VITE_BASE_SOCKET, {
+      auth: { token },
+    });
+
+    setSocket(newSocket);
+
+    return () => {
+      newSocket.disconnect();
+    };
+  }, [navigate]);
+
+  // Handle incoming messages
+  useEffect(() => {
+    if (!socket || !userFullName) return;
+
+    const handleMessage = (msg) => {
+      if (msg && msg.user && (msg.message || msg.content)) {
+        const formattedMsg = {
+          user: msg.user,
+          userFullName: msg.userFullName || msg.user,
+          user_id: msg.user_id,
+          message: msg.message || msg.content,
+          timestamp: msg.timestamp?.slice(0, 16).replace("T", "  ") || "",
         };
 
-        socket.on('message', handleMessage);
-
-        return () => {
-            socket.off('message', handleMessage);
-        };
-    }, [userFullName, navigate]);
-
-    useEffect(() => {
-        if (chatRoom) {
-            socket.emit('join', { userFullName, chatRoom });
-            Axios.post('messages', { chat_room: chatRoom })
-                .then((response) => {
-                    const mappedMessages = response.data.map(msg => ({
-                        userFullName: msg.user,
-                        message: msg.content || 'No message content',
-                        user_id: msg.user_id,
-                        timestamp: msg.timestamp.slice(0, 16).replace('T', '  '), // Format as "YYYY-MM-DD  HH:MM"
-                    }));
-                    setMessages(mappedMessages);
-                    scrollToBottom();
-                })
-                .catch((error) => {
-                    console.error('Error fetching messages:', error);
-                });
-        }
-    }, [chatRoom]);
-
-    const sendMessage = () => {
-        const now = new Date();
-        const timestamp = now.toISOString().slice(0, 16).replace('T', '  '); // Format as "YYYY-MM-DD  HH:MM"
-
-        const msg = {
-            user: user,
-            userFullName: userFullName,
-            chatRoom: chatRoom,
-            user_id: user_id,
-            message: message.trim(),
-            timestamp: timestamp,
-        };
-        if (msg.message) {
-            setMessage('');  // Clear the message input field
-            socket.emit('message', msg, (response) => {
-                if (!response.success) {
-                    console.error('Error sending message:', response.error);
-                }
-            });
-        }
+        setMessages((prevMessages) => [...prevMessages, formattedMsg]);
+        scrollToBottom();
+      } else {
+        console.error("Received invalid message:", msg);
+      }
     };
 
-    const scrollToBottom = () => {
-        if (messageAreaRef.current) {
-            messageAreaRef.current.scrollTop = messageAreaRef.current.scrollHeight;
+    socket.on("message", handleMessage);
+
+    return () => {
+      socket.off("message", handleMessage);
+    };
+  }, [socket, userFullName]);
+
+  // Join chat room and fetch old messages
+  useEffect(() => {
+    if (socket && chatRoom) {
+      socket.emit("join", { userFullName, chatRoom });
+
+      Axios.post("messages", { chat_room: chatRoom })
+        .then((response) => {
+          const mappedMessages = response.data.data.map((msg) => ({
+            userFullName: msg.user,
+            message: msg.content || "No message content",
+            user_id: msg.user_id,
+            timestamp: msg.timestamp.slice(0, 16).replace("T", "  "),
+          }));
+          setMessages(mappedMessages);
+          scrollToBottom();
+        })
+        .catch((error) => {
+          console.error("Error fetching messages:", error);
+        });
+    }
+  }, [socket, chatRoom, userFullName]);
+
+  const sendMessage = () => {
+    if (!socket) return;
+
+    const now = new Date();
+    const timestamp = now.toISOString().slice(0, 16).replace("T", "  ");
+
+    const msg = {
+      user,
+      userFullName,
+      chatRoom,
+      user_id,
+      message: message.trim(),
+      timestamp,
+    };
+
+    if (msg.message) {
+      setMessage("");
+      socket.emit("message", msg, (response) => {
+        if (!response.success) {
+          console.error("Error sending message:", response.error);
         }
-    };
+      });
+    }
+  };
 
-    const handleKeyDown = (e) => {
-        if (e.key === 'Enter') {
-            if (e.altKey) {
-                setMessage((prev) => prev + '\n');
-            } else {
-                e.preventDefault(); // Prevent the default action of Enter key
-                sendMessage();
-            }
-        }
-    };
+  const scrollToBottom = () => {
+    if (messageAreaRef.current) {
+      messageAreaRef.current.scrollTop = messageAreaRef.current.scrollHeight;
+    }
+  };
 
-    const handleLogout = () => {
-        socket.emit('leave', { userFullName, chatRoom });
-        sessionStorage.clear();
-        navigate('/');
-    };
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      if (e.altKey) {
+        setMessage((prev) => prev + "\n");
+      } else {
+        e.preventDefault(); // Prevent the default action of Enter key
+        sendMessage();
+      }
+    }
+  };
 
-    return (
-        <ChatSectionWrapper>
-            <ChatBox>
-                <Brand as={Row}>
-                    <Col xs="auto">
-                        <BsSendFill size={35} />
-                    </Col>
-                    <Col>
-                        <BrandTitle>TalkSpace</BrandTitle>
-                    </Col>
-                    <Col xs="auto">
-                        <Button variant="danger" onClick={handleLogout}>
-                            Logout
-                        </Button>
-                    </Col>
-                </Brand>
-                <MessageArea ref={messageAreaRef}>
-                    {messages.map((msg, index) => {
-                        return (
-                            <Message
-                                key={index}
-                                user={msg.user || 'Unknown User'}
-                                text={msg.message || 'No message content'}
-                                userFullName={msg.userFullName}
-                                type={msg.user_id === user_id ? 'outgoing' : 'incoming'}
-                                timestamp = {msg.timestamp}
-                            />
-                        )
-                    })}
-                </MessageArea>
-                <InputWrapper>
-                    <MessageInput
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Type a message"
-                    />
-                    <SendButton onClick={sendMessage}>
-                        <BsSendFill size={20} />
-                    </SendButton>
-                </InputWrapper>
-            </ChatBox>
-        </ChatSectionWrapper>
-    );
+  const handleLogout = () => {
+    socket.emit("leave", { userFullName, chatRoom });
+    logout();
+    navigate("/");
+  };
+
+  return (
+    <ChatSectionWrapper>
+      <ChatBox>
+        <Brand as={Row}>
+          <Col xs="auto">
+            <BsSendFill size={35} />
+          </Col>
+          <Col>
+            <BrandTitle>TalkSpace</BrandTitle>
+          </Col>
+          <Col xs="auto">
+            <Button variant="danger" onClick={handleLogout}>
+              Logout
+            </Button>
+          </Col>
+        </Brand>
+        <MessageArea ref={messageAreaRef}>
+          {messages.map((msg, index) => {
+            return (
+              <Message
+                key={index}
+                user={msg.user || "Unknown User"}
+                text={msg.message || "No message content"}
+                userFullName={msg.userFullName}
+                type={msg.user_id === user_id ? "outgoing" : "incoming"}
+                timestamp={msg.timestamp}
+              />
+            );
+          })}
+        </MessageArea>
+        <InputWrapper>
+          <MessageInput
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type a message"
+          />
+          <SendButton onClick={sendMessage}>
+            <BsSendFill size={20} />
+          </SendButton>
+        </InputWrapper>
+      </ChatBox>
+    </ChatSectionWrapper>
+  );
 }
 
 export default ChatSection;

@@ -1,8 +1,9 @@
 from flask import Blueprint, request, jsonify
-from .models import db, User, LoginAttempt, Message
-from .forms import RegistrationForm, LoginForm
-from flask_jwt_extended import jwt_required, create_access_token, decode_token
+from app.models import db, Users, LoginAttempt, Messages
+from app.validators import RegistrationForm, LoginForm
+from flask_jwt_extended import create_access_token, decode_token
 from flask_wtf.csrf import generate_csrf
+from app.decorators import jwt_required
 
 # Create Blueprint
 api_bp = Blueprint('api', __name__)
@@ -31,10 +32,10 @@ def login():
     form = LoginForm(data=data)
 
     if form.validate():
-        user = User.query.filter_by(username=form.username.data).first()
+        user = Users.query.filter_by(username=form.username.data).first()
 
         if user and user.check_password(form.password.data):
-            access_token = create_access_token(identity=user.id)
+            access_token = create_access_token(identity=str(user.id))
 
             db.session.add(LoginAttempt(username=form.username.data, success=True))
             db.session.commit()
@@ -81,7 +82,7 @@ def register():
     form = RegistrationForm(data=data)
 
     if form.validate():
-        new_user = User(
+        new_user = Users(
             first_name=form.first_name.data,
             other_names=form.other_names.data,
             username=form.username.data
@@ -92,7 +93,7 @@ def register():
 
         response = {
             "success": True,
-            "message": "User successfully registered",
+            "message": "Users successfully registered",
             "data": new_user.to_dict(),
             "cod": 201
         }
@@ -108,7 +109,8 @@ def register():
 
 
 @api_bp.route('/messages', methods=['POST'])
-def get_messages():
+@jwt_required
+def get_messages(current_user):
     try:
         data = request.get_json()
         chat_room = data.get('chat_room') 
@@ -120,8 +122,14 @@ def get_messages():
                 "cod": 400
             }), 400
         
-        messages = Message.query.filter_by(chat_room=chat_room).order_by(Message.timestamp.asc()).all()
-        response = [msg.to_dict() for msg in messages]
+        messages = Messages.query.filter_by(chat_room=chat_room).order_by(Messages.timestamp.asc()).all()
+        messages_2 = [msg.to_dict() for msg in messages]
+        response = {
+            "success": False,
+            "message": "Messages retrieved",
+            "data": messages_2,
+            "code": 200
+        } 
         
         return jsonify(response), 200
     
@@ -130,16 +138,16 @@ def get_messages():
             "success": False,
             "message": "Failed to fetch messages",
             "error": str(e),
-            "cod": 500
+            "code": 500
         }
         return jsonify(response), 500
 
 
 @api_bp.route('/get_all_users', methods=['GET'])
-@jwt_required()
-def get_all_users():
+@jwt_required
+def get_all_users(current_user):
     try:
-        users = User.query.all()
+        users = Users.query.all()
         response = {
             "success": True,
             "message": "Users found",

@@ -6,9 +6,11 @@ from dotenv import load_dotenv
 from flask_wtf.csrf import CSRFProtect
 from flask_socketio import SocketIO
 from flask_cors import CORS
+from flask_bcrypt import Bcrypt
 
 # Initialize extensions
 db = SQLAlchemy()
+bcrypt = Bcrypt()
 migrate = Migrate()
 jwt = JWTManager()
 csrf = CSRFProtect()
@@ -33,6 +35,7 @@ def create_app():
     migrate.init_app(app, db)
     jwt.init_app(app)
     csrf.init_app(app)
+    bcrypt.init_app(app)
     socketio.init_app(app, cors_allowed_origins="*")
 
     CORS(app, resources={r"/*": {"origins": ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175"]}})

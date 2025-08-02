@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField
 from wtforms.validators import DataRequired, Length, Regexp, ValidationError, Optional
-from .models import User
+from .models import Users
 
 class RegistrationForm(FlaskForm):
     first_name = StringField('first_name', validators=[
@@ -28,7 +28,7 @@ class RegistrationForm(FlaskForm):
     ])
 
     def validate_username(self, field):
-        if User.query.filter_by(username=field.data).first():
+        if Users.query.filter_by(username=field.data).first():
             raise ValidationError('Username is already registered.')
 
 class LoginForm(FlaskForm):
@@ -72,5 +72,5 @@ class UpdateUserForm(FlaskForm):
     ])
 
     def validate_username(self, field):
-        if field.data and User.query.filter_by(username=field.data).first():
+        if field.data and Users.query.filter_by(username=field.data).first():
             raise ValidationError('Username is already registered.')
